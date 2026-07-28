@@ -1,0 +1,43 @@
+name: app_radio
+description: "Aplicación móvil para Android inspirada en Radio Garden con Globo 3D interactivo y reproducción de radio mundial en tiempo real."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Reproducción de Audio y Segundo Plano con Notificaciones
+  just_audio: ^0.9.40
+  audio_service: ^0.18.19
+  
+  # Visualización del Globo 3D
+  webview_flutter: ^4.10.0
+  
+  # Peticiones HTTP a Radio Browser API
+  http: ^1.2.2
+  
+  # Tipografía y UI Premium
+  google_fonts: ^6.2.1
+  cupertino_icons: ^1.0.8
+  
+  # Manejo reactivo de flujos para audio_service
+  rxdart: ^0.28.0
+
+  # Persistencia local para favoritos y recientas
+  shared_preferences: ^2.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/globe/
+    - assets/globe/index.html

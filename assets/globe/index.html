@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Radio Garden 3D Globe</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #030712;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    #globeViz {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #coordinates-tooltip {
+      position: absolute;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(0, 255, 136, 0.4);
+      color: #00ff88;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      z-index: 10;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+    }
+    #coordinates-tooltip.visible {
+      opacity: 1;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.32.1/dist/globe.gl.min.js"></script>
+</head>
+<body>
+  <div id="coordinates-tooltip">SELECCIONANDO UBICACIÓN...</div>
+  <div id="globeViz"></div>
+
+  <script>
+    const tooltip = document.getElementById('coordinates-tooltip');
+    let activeRings = [];
+    let globeInstance = null;
+
+    function notifyFlutter(payload) {
+      if (window.GlobeChannel && window.GlobeChannel.postMessage) {
+        window.GlobeChannel.postMessage(JSON.stringify(payload));
+      }
+    }
+
+    function initGlobe() {
+      globeInstance = Globe()(document.getElementById('globeViz'))
+        .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg')
+        .bumpImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png')
+        .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
+        .showAtmosphere(true)
+        .atmosphereColor('#3a228a')
+        .atmosphereAltitude(0.2)
+        .pointsData([])
+        .pointLat(d => d.lat)
+        .pointLng(d => d.lng)
+        .pointColor(d => d.active ? '#ffffff' : '#00ff88')
+        .pointAltitude(0.02)
+        .pointRadius(0.55)
+        .pointsMerge(false)
+        .ringsData(activeRings)
+        .ringLat(d => d.lat)
+        .ringLng(d => d.lng)
+        .ringColor(() => '#00ffcc')
+        .ringMaxRadius(3.5)
+        .ringPropagationSpeed(3)
+        .ringRepeatPeriod(800)
+        .onGlobeClick(({ lat, lng }) => {
+          handleCoordinateSelection(lat, lng);
+        })
+        .onPointClick((point) => {
+          handleCoordinateSelection(point.lat, point.lng, point.stationuuid);
+        });
+
+      globeInstance.pointOfView({ lat: 20.0, lng: -99.0, altitude: 2.2 }, 0);
+      globeInstance.controls().autoRotate = true;
+      globeInstance.controls().autoRotateSpeed = 0.35;
+      globeInstance.controls().enableDamping = true;
+      globeInstance.controls().dampingFactor = 0.1;
+      globeInstance.controls().addEventListener('start', () => {
+        globeInstance.controls().autoRotate = false;
+      });
+
+      // ✅ Avisar a Flutter que el globo está listo para recibir datos
+      notifyFlutter({ type: 'globe_ready' });
+      console.log('Globe.gl inicializado y listo.');
+    }
+
+    function handleCoordinateSelection(lat, lng, stationuuid = null) {
+      if (!globeInstance) return;
+      globeInstance.controls().autoRotate = false;
+      globeInstance.pointOfView({ lat: lat, lng: lng, altitude: 1.6 }, 900);
+
+      activeRings = [{ lat: lat, lng: lng }];
+      globeInstance.ringsData(activeRings);
+
+      tooltip.textContent = `SINTONIZANDO: ${lat.toFixed(1)}°, ${lng.toFixed(1)}°`;
+      tooltip.classList.add('visible');
+      setTimeout(() => { tooltip.classList.remove('visible'); }, 2800);
+
+      notifyFlutter({ type: 'select_coords', lat: lat, lng: lng, stationuuid: stationuuid });
+    }
+
+    // Flutter → JS: actualizar estación activa con anillo pulsante
+    window.updateActiveStation = function(lat, lng, name, country) {
+      if (!globeInstance) return;
+      activeRings = [{ lat: parseFloat(lat), lng: parseFloat(lng), name: name, country: country }];
+      globeInstance.ringsData(activeRings);
+      globeInstance.pointOfView({ lat: parseFloat(lat), lng: parseFloat(lng), altitude: 1.5 }, 1000);
+    };
+
+    // Flutter → JS: cargar los puntos de todas las estaciones del mundo.
+    // Flutter asigna los datos a window.__stationsData (array JS nativo) y luego llama a esta función.
+    window.loadStationsFromGlobal = function() {
+      if (!globeInstance) {
+        console.warn('Globe no listo, reintentando en 500ms...');
+        setTimeout(window.loadStationsFromGlobal, 500);
+        return;
+      }
+      const raw = window.__stationsData;
+      if (!raw || !Array.isArray(raw)) {
+        console.error('loadStationsFromGlobal: __stationsData inválido', typeof raw);
+        return;
+      }
+      const points = raw
+        .map(s => ({
+          lat: parseFloat(s.geo_lat),
+          lng: parseFloat(s.geo_long),
+          stationuuid: s.stationuuid,
+          name: s.name
+        }))
+        .filter(s => !isNaN(s.lat) && !isNaN(s.lng));
+
+      globeInstance.pointsData(points);
+      console.log('Globe 3D: puntos pintados en mapa:', points.length);
+    };
+
+    window.addEventListener('resize', () => {
+      if (globeInstance) {
+        globeInstance.width(window.innerWidth);
+        globeInstance.height(window.innerHeight);
+      }
+    });
+
+    // Iniciar solo cuando Three.js y Globe.gl estén disponibles
+    if (typeof Globe !== 'undefined') {
+      initGlobe();
+    } else {
+      window.addEventListener('load', initGlobe);
+    }
+  </script>
+</body>
+</html>

@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
 import '../models/radio_station.dart';
 
 /// Manejador de audio que integra just_audio, audio_service,
+/// lectura de Metadata ICY en tiempo real (nombre de canción), búsqueda de carátula en iTunes API,
 /// controles de Siguiente / Anterior y reconexión automática anti-cortes de señal.
 class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   final AudioPlayer _player = AudioPlayer();
@@ -13,6 +16,16 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   final _currentStationSubject = BehaviorSubject<RadioStation?>.seeded(null);
   Stream<RadioStation?> get currentStationStream => _currentStationSubject.stream;
   RadioStation? get currentStation => _currentStationSubject.value;
+
+  // Metadata ICY de la canción en vivo (Artista - Canción)
+  final _nowPlayingTrackSubject = BehaviorSubject<String?>.seeded(null);
+  Stream<String?> get nowPlayingTrackStream => _nowPlayingTrackSubject.stream;
+  String? get nowPlayingTrack => _nowPlayingTrackSubject.value;
+
+  // Carátula HD obtenida dinámicamente (de iTunes o Favicon de la emisora)
+  final _albumArtUrlSubject = BehaviorSubject<String?>.seeded(null);
+  Stream<String?> get albumArtUrlStream => _albumArtUrlSubject.stream;
+  String? get albumArtUrl => _albumArtUrlSubject.value;
 
   final _errorSubject = BehaviorSubject<String?>.seeded(null);
   Stream<String?> get errorStream => _errorSubject.stream;
@@ -48,6 +61,48 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
         _handleStreamDrop();
       }
     });
+
+    // Escuchar metadatos ICY de la transmisión de radio (nombre de la canción en vivo)
+    _player.icyMetadataStream.listen((icy) {
+      final title = icy?.info?.title;
+      if (title != null && title.trim().isNotEmpty) {
+        final cleanTitle = title.trim();
+        debugPrint('Radio ICY Metadata: $cleanTitle');
+        _nowPlayingTrackSubject.add(cleanTitle);
+        _fetchITunesAlbumArt(cleanTitle);
+      }
+    });
+  }
+
+  /// Busca la carátula en alta resolución en la API pública de iTunes basada en la canción que suena
+  Future<void> _fetchITunesAlbumArt(String query) async {
+    try {
+      final uri = Uri.parse(
+          'https://itunes.apple.com/search?term=${Uri.encodeComponent(query)}&entity=song&limit=1');
+      final res = await http.get(uri).timeout(const Duration(seconds: 4));
+
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body);
+        if (data['results'] != null && (data['results'] as List).isNotEmpty) {
+          final art100 = data['results'][0]['artworkUrl100']?.toString();
+          if (art100 != null && art100.isNotEmpty) {
+            // Convertir carátula de 100x100 a alta definición 600x600 px
+            final art600 = art100.replaceAll('100x100bb', '600x600bb');
+            _albumArtUrlSubject.add(art600);
+
+            // Actualizar notificación multimedia de Android
+            if (mediaItem.value != null) {
+              mediaItem.add(mediaItem.value!.copyWith(
+                subtitle: query,
+                artUri: Uri.tryParse(art600),
+              ));
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error buscando carátula en iTunes API: $e');
+    }
   }
 
   /// Si la señal de la radio se corta por micro-caídas de red, reintenta reconectar automáticamente
@@ -78,6 +133,8 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> playStation(RadioStation station, {bool updateQueue = true}) async {
     _isManualStop = false;
     _errorSubject.add(null);
+    _nowPlayingTrackSubject.add(null);
+    _albumArtUrlSubject.add(station.favicon.isNotEmpty ? station.favicon : null);
     _currentStationSubject.add(station);
 
     if (updateQueue) {
@@ -105,13 +162,12 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
         throw Exception('URL no válida');
       }
 
-      // Configurar fuente de audio con timeout
       await _player
           .setAudioSource(AudioSource.uri(uri), preload: true)
           .timeout(const Duration(seconds: 10));
 
       await _player.play();
-      _reconnectAttempts = 0; // Exito, reiniciar contador
+      _reconnectAttempts = 0;
     } catch (e) {
       debugPrint('Timeout o error al sintonizar ${station.name}: $e');
       _handleStreamDrop();
@@ -236,6 +292,8 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
     cancelSleepTimer();
     _player.dispose();
     _currentStationSubject.close();
+    _nowPlayingTrackSubject.close();
+    _albumArtUrlSubject.close();
     _errorSubject.close();
     _sleepTimerRemainingSubject.close();
   }

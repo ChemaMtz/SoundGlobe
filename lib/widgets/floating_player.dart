@@ -57,11 +57,11 @@ class FloatingPlayer extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Indicador circular de EN VIVO (Live Radar)
-              _buildLiveIndicator(),
+              // Carátula HD / Logo con indicador EN VIVO
+              _buildAlbumArt(station),
               const SizedBox(width: 14),
               
-              // Título y Ciudad de la emisora
+              // Título de Emisora y Canción en vivo
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,32 +73,40 @@ class FloatingPlayer extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.outfit(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on,
-                          size: 13,
-                          color: Color(0xFF38BDF8),
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            station.displayLocation,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.outfit(
-                              color: const Color(0xFF94A3B8),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                    StreamBuilder<String?>(
+                      stream: audioHandler.nowPlayingTrackStream,
+                      builder: (context, trackSnapshot) {
+                        final track = trackSnapshot.data;
+                        final hasTrack = track != null && track.isNotEmpty;
+
+                        return Row(
+                          children: [
+                            Icon(
+                              hasTrack ? Icons.music_note_rounded : Icons.location_on,
+                              size: 13,
+                              color: hasTrack ? const Color(0xFF00FF88) : const Color(0xFF38BDF8),
                             ),
-                          ),
-                        ),
-                      ],
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                hasTrack ? track : station.displayLocation,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.outfit(
+                                  color: hasTrack ? const Color(0xFF00FF88) : const Color(0xFF94A3B8),
+                                  fontSize: 12,
+                                  fontWeight: hasTrack ? FontWeight.w600 : FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -160,47 +168,45 @@ class FloatingPlayer extends StatelessWidget {
     );
   }
 
-  Widget _buildLiveIndicator() {
-    return StreamBuilder<ProcessingState>(
-      stream: audioHandler.processingStateStream,
+  Widget _buildAlbumArt(RadioStation station) {
+    return StreamBuilder<String?>(
+      stream: audioHandler.albumArtUrlStream,
       builder: (context, snapshot) {
-        final state = snapshot.data ?? ProcessingState.idle;
-        final bool isBuffering =
-            state == ProcessingState.loading || state == ProcessingState.buffering;
+        final artUrl = snapshot.data ?? (station.favicon.isNotEmpty ? station.favicon : null);
 
         return Container(
-          width: 46,
-          height: 46,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF00FF88), Color(0xFF00B8D4)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+            borderRadius: BorderRadius.circular(12),
+            color: const Color(0xFF0F172A),
+            border: Border.all(
+              color: const Color(0xFF00FF88).withOpacity(0.6),
+              width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF00FF88).withOpacity(0.35),
+                color: const Color(0xFF00FF88).withOpacity(0.25),
                 blurRadius: 10,
               ),
             ],
           ),
-          child: Center(
-            child: isBuffering
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF030712)),
-                    ),
-                  )
-                : const Icon(
-                    Icons.radio,
-                    color: Color(0xFF030712),
+          clipBehavior: Clip.antiAlias,
+          child: artUrl != null && artUrl.isNotEmpty
+              ? Image.network(
+                  artUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.music_note_rounded,
+                    color: Color(0xFF00FF88),
                     size: 24,
                   ),
-          ),
+                )
+              : const Icon(
+                  Icons.radio_rounded,
+                  color: Color(0xFF00FF88),
+                  size: 24,
+                ),
         );
       },
     );

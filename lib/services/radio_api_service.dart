@@ -8,7 +8,7 @@ import '../models/radio_station.dart';
 /// con sistema de Caché en Disco (SharedPreferences) para que las emisoras
 /// carguen DE INMEDIATO (en 0.01s) al abrir la app sin necesidad de esperar a internet.
 class RadioApiService {
-  static const String _diskCacheKey = 'radio_stations_disk_cache_v3';
+  static const String _diskCacheKey = 'radio_stations_disk_cache_v4';
 
   static const List<String> _mirrors = [
     'https://de1.api.radio-browser.info',
@@ -45,19 +45,14 @@ class RadioApiService {
   }
 
   /// Retorna las emisoras almacenadas.
-  /// 1. Si ya están cargadas en memoria, las retorna inmediatamente.
-  /// 2. Si hay caché guardado en el disco local, las carga de inmediato sin hacer peticiones a internet.
-  /// 3. Si no hay nada guardado en disco (o forceRefresh == true), descarga de la API y las guarda en el disco local.
   Future<List<RadioStation>> getTopGlobalStations({
     int limit = 5000,
     bool forceRefresh = false,
   }) async {
-    // Si ya tenemos estaciones en memoria y no es recarga forzada, retornar directamente
     if (_cachedGeoStations.isNotEmpty && !forceRefresh) {
       return _cachedGeoStations;
     }
 
-    // Intentar cargar primero del almacenamiento local del teléfono (disco)
     if (!forceRefresh) {
       final diskStations = await _loadFromDiskCache();
       if (diskStations.isNotEmpty) {
@@ -67,12 +62,11 @@ class RadioApiService {
           _cachedUuids.add(s.stationUuid);
           _cachedGeoStations.add(s);
         }
-        debugPrint('RadioApiService: Cargadas ${diskStations.length} emisoras desde Caché Local (instantáneo).');
+        debugPrint('RadioApiService: Cargadas ${diskStations.length} emisoras desde Caché Local.');
         return _cachedGeoStations;
       }
     }
 
-    // Si el caché local estaba vacío o se solicitó recargar (forceRefresh == true), consultar la API de red
     for (int attempt = 0; attempt < _mirrors.length; attempt++) {
       try {
         _cachedGeoStations.clear();
@@ -105,8 +99,7 @@ class RadioApiService {
         }
 
         if (_cachedGeoStations.isNotEmpty) {
-          debugPrint('RadioApiService: Descargadas de la API y guardando en disco ${_cachedGeoStations.length} emisoras.');
-          // Guardar copia de respaldo en el disco local del teléfono
+          debugPrint('RadioApiService: Descargadas ${_cachedGeoStations.length} emisoras de la API.');
           await _saveToDiskCache(_cachedGeoStations);
           return _cachedGeoStations;
         }
@@ -118,7 +111,6 @@ class RadioApiService {
     return _cachedGeoStations;
   }
 
-  /// Guarda la lista completa de estaciones en el almacenamiento interno del teléfono.
   Future<void> _saveToDiskCache(List<RadioStation> stations) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -129,7 +121,6 @@ class RadioApiService {
     }
   }
 
-  /// Carga la lista de estaciones desde el almacenamiento interno del teléfono.
   Future<List<RadioStation>> _loadFromDiskCache() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -150,22 +141,10 @@ class RadioApiService {
     }
   }
 
-  /// Parsea y añade al caché solo las estaciones con geo_lat y geo_long REALES no-cero.
+  /// Parsea y añade al caché TODAS las estaciones de la API.
   void _ingestJson(List<dynamic> list) {
     for (final item in list) {
       try {
-        final rawLat = item['geo_lat'];
-        final rawLng = item['geo_long'];
-
-        if (rawLat == null || rawLng == null) continue;
-
-        final lat = double.tryParse(rawLat.toString());
-        final lng = double.tryParse(rawLng.toString());
-
-        if (lat == null || lng == null) continue;
-        if (lat == 0.0 && lng == 0.0) continue;
-        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) continue;
-
         final uuid = item['stationuuid']?.toString() ?? '';
         if (uuid.isEmpty || _cachedUuids.contains(uuid)) continue;
 
@@ -173,6 +152,9 @@ class RadioApiService {
             ? item['url_resolved'].toString()
             : (item['url']?.toString() ?? '');
         if (url.isEmpty) continue;
+
+        final lat = double.tryParse(item['geo_lat']?.toString() ?? '0.0') ?? 0.0;
+        final lng = double.tryParse(item['geo_long']?.toString() ?? '0.0') ?? 0.0;
 
         _cachedUuids.add(uuid);
         _cachedGeoStations.add(RadioStation(

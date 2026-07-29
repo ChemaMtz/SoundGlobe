@@ -1,4 +1,4 @@
-package com.example.app_radio
+package com.chemamtz.soundglobe
 
 import com.ryanheise.audioservice.AudioServiceActivity
 

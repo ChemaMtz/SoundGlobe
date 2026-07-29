@@ -8,7 +8,7 @@ import '../models/radio_station.dart';
 /// con sistema de Caché en Disco (SharedPreferences) para que las emisoras
 /// carguen DE INMEDIATO (en 0.01s) al abrir la app sin necesidad de esperar a internet.
 class RadioApiService {
-  static const String _diskCacheKey = 'radio_stations_disk_cache_v2';
+  static const String _diskCacheKey = 'radio_stations_disk_cache_v3';
 
   static const List<String> _mirrors = [
     'https://de1.api.radio-browser.info',

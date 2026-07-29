@@ -656,7 +656,7 @@ class _CountrySection extends StatefulWidget {
 }
 
 class _CountrySectionState extends State<_CountrySection> {
-  int _visibleLimit = 25;
+  int _visibleLimit = 30;
 
   @override
   Widget build(BuildContext context) {
@@ -734,41 +734,67 @@ class _CountrySectionState extends State<_CountrySection> {
               if (total > _visibleLimit)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () {
-                      setState(() {
-                        _visibleLimit += 50;
-                      });
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFF00FF88).withOpacity(0.4),
-                          width: 1,
+                  child: Column(
+                    children: [
+                      InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () {
+                          setState(() {
+                            _visibleLimit += 100;
+                          });
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0F172A),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: const Color(0xFF00FF88),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00FF88).withOpacity(0.15),
+                                blurRadius: 10,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.add_circle_rounded,
+                                  color: Color(0xFF00FF88), size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Ver más emisoras (+${total - _visibleLimit} restantes)',
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFF00FF88),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.add_circle_outline_rounded,
-                              color: Color(0xFF00FF88), size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Ver más emisoras (+${total - _visibleLimit} restantes)',
-                            style: GoogleFonts.outfit(
-                              color: const Color(0xFF00FF88),
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                            ),
+                      const SizedBox(height: 6),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _visibleLimit = total;
+                          });
+                        },
+                        child: Text(
+                          'Mostrar todas ($total emisoras)',
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF38BDF8),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 )
               else if (total > 25 && _visibleLimit > 25)

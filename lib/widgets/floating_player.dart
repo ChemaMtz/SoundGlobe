@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/radio_station.dart';
 import '../services/radio_audio_handler.dart';
+import 'full_player_modal.dart';
 
 /// Reproductor flotante estilo Glassmorphic ubicado en la parte inferior.
 /// Muestra la emisora activa, ubicación, estado de buffering y botones Play/Pause.
@@ -27,7 +28,9 @@ class FloatingPlayer extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        return Container(
+        return GestureDetector(
+          onTap: () => FullPlayerModal.show(context, audioHandler),
+          child: Container(
           margin: EdgeInsets.only(
             left: 12,
             right: 12,
@@ -163,6 +166,7 @@ class FloatingPlayer extends StatelessWidget {
               _buildPlayPauseButton(),
             ],
           ),
+        ),
         );
       },
     );

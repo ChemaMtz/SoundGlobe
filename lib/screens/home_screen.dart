@@ -690,21 +690,43 @@ class _CountrySectionState extends State<_CountrySection> {
                         fontWeight: FontWeight.w700,
                       )),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: const Color(0xFF1E293B), width: 1),
+                InkWell(
+                  onTap: () {
+                    CountryStationsModal.show(
+                      context: context,
+                      country: widget.country,
+                      flag: widget.flag,
+                      stations: widget.stations,
+                      audioHandler: widget.audioHandler,
+                      onSelectStation: widget.onSelectStation,
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F172A),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: const Color(0xFF00FF88).withOpacity(0.5),
+                          width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('$total',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF00FF88),
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            )),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.arrow_forward_ios_rounded,
+                            size: 10, color: Color(0xFF00FF88)),
+                      ],
+                    ),
                   ),
-                  child: Text('$total',
-                      style: GoogleFonts.outfit(
-                        color: const Color(0xFF64748B),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      )),
                 ),
                 const SizedBox(width: 10),
                 Icon(

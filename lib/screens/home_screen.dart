@@ -4,6 +4,7 @@ import '../models/radio_station.dart';
 import '../services/favorites_service.dart';
 import '../services/radio_api_service.dart';
 import '../services/radio_audio_handler.dart';
+import '../widgets/country_stations_modal.dart';
 import '../widgets/floating_player.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -734,67 +735,51 @@ class _CountrySectionState extends State<_CountrySection> {
               if (total > _visibleLimit)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: Column(
-                    children: [
-                      InkWell(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () {
+                      CountryStationsModal.show(
+                        context: context,
+                        country: widget.country,
+                        flag: widget.flag,
+                        stations: widget.stations,
+                        audioHandler: widget.audioHandler,
+                        onSelectStation: widget.onSelectStation,
+                      );
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
                         borderRadius: BorderRadius.circular(14),
-                        onTap: () {
-                          setState(() {
-                            _visibleLimit += 100;
-                          });
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0F172A),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
+                        border: Border.all(
+                          color: const Color(0xFF00FF88),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00FF88).withOpacity(0.15),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(widget.flag, style: const TextStyle(fontSize: 18)),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Ver las $total emisoras de ${widget.country} ➔',
+                            style: GoogleFonts.outfit(
                               color: const Color(0xFF00FF88),
-                              width: 1.5,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF00FF88).withOpacity(0.15),
-                                blurRadius: 10,
-                              ),
-                            ],
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.add_circle_rounded,
-                                  color: Color(0xFF00FF88), size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Ver más emisoras (+${total - _visibleLimit} restantes)',
-                                style: GoogleFonts.outfit(
-                                  color: const Color(0xFF00FF88),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _visibleLimit = total;
-                          });
-                        },
-                        child: Text(
-                          'Mostrar todas ($total emisoras)',
-                          style: GoogleFonts.outfit(
-                            color: const Color(0xFF38BDF8),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 )
               else if (total > 25 && _visibleLimit > 25)

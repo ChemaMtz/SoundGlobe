@@ -29,7 +29,7 @@ void main() async {
   final audioHandler = await AudioService.init<RadioAudioHandler>(
     builder: () => RadioAudioHandler(),
     config: const AudioServiceConfig(
-      androidNotificationChannelId: 'com.example.app_radio.channel.audio',
+      androidNotificationChannelId: 'com.chemamtz.soundglobe.channel.audio',
       androidNotificationChannelName: 'Radio Garden Streaming en vivo',
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: true,

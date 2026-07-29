@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.app_radio">
+    package="com.chemamtz.soundglobe">
 
     <!-- Permiso esencial para consumir Radio Browser API y reproducir streaming de radio -->
     <uses-permission android:name="android.permission.INTERNET"/>

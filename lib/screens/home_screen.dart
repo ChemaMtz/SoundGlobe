@@ -62,9 +62,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _loadStations() async {
+  Future<void> _loadStations({bool forceRefresh = false}) async {
     setState(() => _loading = true);
-    final stations = await _api.getTopGlobalStations(limit: 5000);
+    final stations = await _api.getTopGlobalStations(
+      limit: 5000,
+      forceRefresh: forceRefresh,
+    );
     if (!mounted) return;
 
     final map = <String, List<RadioStation>>{};
@@ -302,8 +305,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.refresh_rounded, color: Color(0xFF00FF88)),
-                onPressed: _loadStations,
-                tooltip: 'Recargar emisoras',
+                onPressed: () {
+                  _showSnackbar('Actualizando catálogo desde la red...');
+                  _loadStations(forceRefresh: true);
+                },
+                tooltip: 'Actualizar emisoras',
               ),
             ],
           ),

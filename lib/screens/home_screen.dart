@@ -627,7 +627,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _CountrySection extends StatelessWidget {
+class _CountrySection extends StatefulWidget {
   final String flag;
   final String country;
   final List<RadioStation> stations;
@@ -639,6 +639,7 @@ class _CountrySection extends StatelessWidget {
   final void Function(RadioStation) onToggleFavorite;
 
   const _CountrySection({
+    super.key,
     required this.flag,
     required this.country,
     required this.stations,
@@ -651,27 +652,37 @@ class _CountrySection extends StatelessWidget {
   });
 
   @override
+  State<_CountrySection> createState() => _CountrySectionState();
+}
+
+class _CountrySectionState extends State<_CountrySection> {
+  int _visibleLimit = 25;
+
+  @override
   Widget build(BuildContext context) {
+    final total = widget.stations.length;
+    final visibleStations = widget.stations.take(_visibleLimit).toList();
+
     return Column(
       children: [
         InkWell(
-          onTap: onToggle,
+          onTap: widget.onToggle,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
                   color: const Color(0xFF1E293B),
-                  width: isExpanded ? 0 : 1,
+                  width: widget.isExpanded ? 0 : 1,
                 ),
               ),
             ),
             child: Row(
               children: [
-                Text(flag, style: const TextStyle(fontSize: 24)),
+                Text(widget.flag, style: const TextStyle(fontSize: 24)),
                 const SizedBox(width: 14),
                 Expanded(
-                  child: Text(country,
+                  child: Text(widget.country,
                       style: GoogleFonts.outfit(
                         color: Colors.white,
                         fontSize: 15,
@@ -687,7 +698,7 @@ class _CountrySection extends StatelessWidget {
                     border: Border.all(
                         color: const Color(0xFF1E293B), width: 1),
                   ),
-                  child: Text('${stations.length}',
+                  child: Text('$total',
                       style: GoogleFonts.outfit(
                         color: const Color(0xFF64748B),
                         fontSize: 12,
@@ -696,7 +707,7 @@ class _CountrySection extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Icon(
-                  isExpanded
+                  widget.isExpanded
                       ? Icons.keyboard_arrow_up_rounded
                       : Icons.keyboard_arrow_down_rounded,
                   color: const Color(0xFF475569),
@@ -706,29 +717,77 @@ class _CountrySection extends StatelessWidget {
             ),
           ),
         ),
-        if (isExpanded)
+        if (widget.isExpanded)
           Column(
             children: [
-              ...stations.take(50).toList().asMap().entries.map((entry) {
+              ...visibleStations.asMap().entries.map((entry) {
                 final idx = entry.key;
                 final s = entry.value;
                 return _StationTile(
                   station: s,
-                  isPlaying: currentStation?.stationUuid == s.stationUuid,
-                  isFavorite: favUuids.contains(s.stationUuid),
-                  onTap: () => onSelectStation(s, stations, idx),
-                  onFavoriteTap: () => onToggleFavorite(s),
+                  isPlaying: widget.currentStation?.stationUuid == s.stationUuid,
+                  isFavorite: widget.favUuids.contains(s.stationUuid),
+                  onTap: () => widget.onSelectStation(s, widget.stations, idx),
+                  onFavoriteTap: () => widget.onToggleFavorite(s),
                 );
               }),
-              if (stations.length > 50)
+              if (total > _visibleLimit)
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 8),
-                  child: Text(
-                    '+${stations.length - 50} emisoras más',
-                    style: GoogleFonts.outfit(
-                      color: const Color(0xFF475569),
-                      fontSize: 12,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      setState(() {
+                        _visibleLimit += 50;
+                      });
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF00FF88).withOpacity(0.4),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.add_circle_outline_rounded,
+                              color: Color(0xFF00FF88), size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Ver más emisoras (+${total - _visibleLimit} restantes)',
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF00FF88),
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else if (total > 25 && _visibleLimit > 25)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _visibleLimit = 25;
+                      });
+                    },
+                    icon: const Icon(Icons.keyboard_arrow_up_rounded,
+                        color: Color(0xFF64748B), size: 18),
+                    label: Text(
+                      'Mostrar menos',
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF64748B),
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ),

@@ -605,12 +605,14 @@ class _HomeScreenState extends State<HomeScreen> {
             _selectedCategory != 'Todos';
 
         return _CountrySection(
+          key: ValueKey(country),
           flag: _countryFlag(country),
           country: country,
           stations: stations,
           isExpanded: isExpanded,
           currentStation: widget.audioHandler.currentStation,
           favUuids: _favUuids,
+          audioHandler: widget.audioHandler,
           onToggle: () {
             setState(() {
               if (_expanded.contains(country)) {
@@ -638,6 +640,7 @@ class _CountrySection extends StatefulWidget {
   final VoidCallback onToggle;
   final void Function(RadioStation station, List<RadioStation> playlist, int index) onSelectStation;
   final void Function(RadioStation) onToggleFavorite;
+  final RadioAudioHandler audioHandler;
 
   const _CountrySection({
     super.key,
@@ -650,6 +653,7 @@ class _CountrySection extends StatefulWidget {
     required this.onToggle,
     required this.onSelectStation,
     required this.onToggleFavorite,
+    required this.audioHandler,
   });
 
   @override

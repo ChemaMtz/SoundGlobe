@@ -1,7 +1,7 @@
 name: app_radio
 description: "Aplicación móvil para Android inspirada en Radio Garden con Globo 3D interactivo y reproducción de radio mundial en tiempo real."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ">=3.2.0 <4.0.0"

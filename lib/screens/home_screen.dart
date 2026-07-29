@@ -103,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _playStation(RadioStation station, {List<RadioStation>? playlist, int index = 0}) {
+  void _playStation(RadioStation station, [List<RadioStation>? playlist, int index = 0]) {
     if (playlist != null && playlist.isNotEmpty) {
       widget.audioHandler.setQueue(playlist, initialIndex: index);
     }
@@ -619,7 +619,7 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             });
           },
-          onSelectStation: _playStation,
+          onSelectStation: (st, pl, idx) => _playStation(st, pl, idx),
           onToggleFavorite: _toggleFavorite,
         );
       },

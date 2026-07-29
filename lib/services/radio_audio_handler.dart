@@ -93,7 +93,7 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
             // Actualizar notificación multimedia de Android
             if (mediaItem.value != null) {
               mediaItem.add(mediaItem.value!.copyWith(
-                subtitle: query,
+                artist: query,
                 artUri: Uri.tryParse(art600),
               ));
             }

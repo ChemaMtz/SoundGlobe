@@ -103,7 +103,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _playStation(RadioStation station) {
+  void _playStation(RadioStation station, {List<RadioStation>? playlist, int index = 0}) {
+    if (playlist != null && playlist.isNotEmpty) {
+      widget.audioHandler.setQueue(playlist, initialIndex: index);
+    }
     widget.audioHandler.playStation(station);
     _favs.addRecent(station);
     setState(() {});
@@ -632,7 +635,7 @@ class _CountrySection extends StatelessWidget {
   final RadioStation? currentStation;
   final Set<String> favUuids;
   final VoidCallback onToggle;
-  final void Function(RadioStation) onSelectStation;
+  final void Function(RadioStation station, List<RadioStation> playlist, int index) onSelectStation;
   final void Function(RadioStation) onToggleFavorite;
 
   const _CountrySection({
@@ -706,13 +709,17 @@ class _CountrySection extends StatelessWidget {
         if (isExpanded)
           Column(
             children: [
-              ...stations.take(50).map((s) => _StationTile(
-                    station: s,
-                    isPlaying: currentStation?.stationUuid == s.stationUuid,
-                    isFavorite: favUuids.contains(s.stationUuid),
-                    onTap: () => onSelectStation(s),
-                    onFavoriteTap: () => onToggleFavorite(s),
-                  )),
+              ...stations.take(50).toList().asMap().entries.map((entry) {
+                final idx = entry.key;
+                final s = entry.value;
+                return _StationTile(
+                  station: s,
+                  isPlaying: currentStation?.stationUuid == s.stationUuid,
+                  isFavorite: favUuids.contains(s.stationUuid),
+                  onTap: () => onSelectStation(s, stations, idx),
+                  onFavoriteTap: () => onToggleFavorite(s),
+                );
+              }),
               if (stations.length > 50)
                 Padding(
                   padding: const EdgeInsets.symmetric(

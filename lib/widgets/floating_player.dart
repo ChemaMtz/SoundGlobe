@@ -212,27 +212,44 @@ class FloatingPlayer extends StatelessWidget {
       builder: (context, playingSnapshot) {
         final bool isPlaying = playingSnapshot.data ?? false;
 
-        return Material(
-          color: const Color(0xFF1E293B),
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: () {
-              if (isPlaying) {
-                audioHandler.pause();
-              } else {
-                audioHandler.play();
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Icon(
-                isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                color: Colors.white,
-                size: 28,
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.skip_previous_rounded,
+                  color: Color(0xFF94A3B8), size: 24),
+              onPressed: () => audioHandler.skipToPrevious(),
+              tooltip: 'Emisora anterior',
+            ),
+            Material(
+              color: const Color(0xFF1E293B),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () {
+                  if (isPlaying) {
+                    audioHandler.pause();
+                  } else {
+                    audioHandler.play();
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Icon(
+                    isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
               ),
             ),
-          ),
+            IconButton(
+              icon: const Icon(Icons.skip_next_rounded,
+                  color: Color(0xFF94A3B8), size: 24),
+              onPressed: () => audioHandler.skipToNext(),
+              tooltip: 'Siguiente emisora',
+            ),
+          ],
         );
       },
     );
